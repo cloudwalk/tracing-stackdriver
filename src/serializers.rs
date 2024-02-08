@@ -1,8 +1,7 @@
-use serde::ser::{Serialize, SerializeMap, SerializeSeq};
+use serde::ser::{Serialize, SerializeMap};
 use serde_json::Value;
-use tracing_core::Subscriber;
 use tracing_subscriber::{
-    fmt::{format::JsonFields, FmtContext, FormattedFields},
+    fmt::{format::JsonFields, FormattedFields},
     registry::{LookupSpan, SpanRef},
 };
 
@@ -38,7 +37,7 @@ where
         let span_length = formatted_fields.fields.len() + 1;
         let mut map = serializer.serialize_map(Some(span_length))?;
 
-        match serde_json::from_str::<Value>(formatted_fields) {
+        match serde_json::from_str::<Value>(formatted_fields) { // TODO: this seems weird
             // handle string escaping "properly" (this should be fixed upstream)
             // https://github.com/tokio-rs/tracing/issues/391
             Ok(Value::Object(fields)) => {
@@ -56,39 +55,40 @@ where
     }
 }
 
-/// Serializable tracing context for serializing a collection of spans
-pub(crate) struct SerializableContext<'a, 'b, S>(&'b FmtContext<'a, S, JsonFields>)
-where
-    S: Subscriber + for<'lookup> LookupSpan<'lookup>;
+// TODO: remove
+// /// Serializable tracing context for serializing a collection of spans
+// pub(crate) struct SerializableContext<'a, 'b, S>(&'b FmtContext<'a, S, JsonFields>)
+// where
+//     S: Subscriber + for<'lookup> LookupSpan<'lookup>;
 
-impl<'a, 'b, S> SerializableContext<'a, 'b, S>
-where
-    S: Subscriber + for<'lookup> LookupSpan<'lookup>,
-{
-    pub(crate) fn new(context: &'b FmtContext<'a, S, JsonFields>) -> Self {
-        Self(context)
-    }
-}
+// impl<'a, 'b, S> SerializableContext<'a, 'b, S>
+// where
+//     S: Subscriber + for<'lookup> LookupSpan<'lookup>,
+// {
+//     pub(crate) fn new(context: &'b FmtContext<'a, S, JsonFields>) -> Self {
+//         Self(context)
+//     }
+// }
 
-impl<'a, 'b, S> Serialize for SerializableContext<'a, 'b, S>
-where
-    S: Subscriber + for<'lookup> LookupSpan<'lookup>,
-{
-    fn serialize<R>(&self, serializer: R) -> Result<R::Ok, R::Error>
-    where
-        R: serde::Serializer,
-    {
-        let mut list = serializer.serialize_seq(None)?;
+// impl<'a, 'b, S> Serialize for SerializableContext<'a, 'b, S>
+// where
+//     S: Subscriber + for<'lookup> LookupSpan<'lookup>,
+// {
+//     fn serialize<R>(&self, serializer: R) -> Result<R::Ok, R::Error>
+//     where
+//         R: serde::Serializer,
+//     {
+//         let mut list = serializer.serialize_seq(None)?;
 
-        if let Some(leaf_span) = self.0.lookup_current() {
-            for span in leaf_span.scope().from_root() {
-                list.serialize_element(&SerializableSpan::new(&span))?;
-            }
-        }
+//         if let Some(leaf_span) = self.0.lookup_current() {
+//             for span in leaf_span.scope().from_root() {
+//                 list.serialize_element(&SerializableSpan::new(&span))?;
+//             }
+//         }
 
-        list.end()
-    }
-}
+//         list.end()
+//     }
+// }
 
 pub(crate) struct SourceLocation<'a> {
     pub(crate) file: &'a str,

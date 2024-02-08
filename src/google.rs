@@ -64,20 +64,19 @@ impl From<&Level> for LogSeverity {
 impl FromStr for LogSeverity {
     type Err = Infallible;
 
-    fn from_str(string: &str) -> Result<Self, Self::Err> {
-        let severity = match string.to_lowercase().as_str() {
-            "debug" | "trace" => Self::Debug,
-            "info" => Self::Info,
-            "notice" => Self::Notice,
-            "warn" | "warning" => Self::Warning,
-            "error" => Self::Error,
-            "critical" => Self::Critical,
-            "alert" => Self::Alert,
-            "emergency" => Self::Emergency,
+    fn from_str(severity: &str) -> Result<Self, Self::Err> {
+        let equals = |value| severity.eq_ignore_ascii_case(value);
+        Ok(match () {
+            _ if equals("debug") || equals("trace") => Self::Debug,
+            _ if equals("info") => Self::Info,
+            _ if equals("notice") => Self::Notice,
+            _ if equals("warn") || equals("warning") => Self::Warning,
+            _ if equals("error") => Self::Error,
+            _ if equals("critical") => Self::Critical,
+            _ if equals("alert") => Self::Alert,
+            _ if equals("emergency") => Self::Emergency,
             _ => Self::Default,
-        };
-
-        Ok(severity)
+        })
     }
 }
 
@@ -100,22 +99,22 @@ impl From<serde_json::Value> for LogSeverity {
     }
 }
 
-/// Typechecked HttpRequest structure for stucturally logging information about a request.
+/// Structure for stucturally logging information about a request.
 /// [See Google's HttpRequest docs here](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#HttpRequest).
 #[cfg_attr(docsrs, doc(cfg(feature = "valuable")))]
 #[cfg(any(docsrs, all(tracing_unstable, feature = "valuable")))]
 #[derive(Default)]
 pub struct HttpRequest {
     /// Valid HTTP Method for the request (e.g. GET, POST, etc)
-    pub request_method: Option<http::Method>,
+    pub request_method: Option<&'static str>,
     /// URL from the HTTP request
-    pub request_url: Option<url::Url>,
+    pub request_url: Option<String>,
     /// Size of the HTTP request in bytes
     pub request_size: Option<u32>,
     /// Size of the HTTP response in bytes
     pub response_size: Option<u32>,
     /// Valid HTTP StatusCode for the response
-    pub status: Option<http::StatusCode>,
+    pub status: Option<u16>,
     /// User Agent string of the request
     pub user_agent: Option<String>,
     /// IP address of the client that issued the request
@@ -123,7 +122,7 @@ pub struct HttpRequest {
     /// IP address of the server that the request was sent to
     pub server_ip: Option<std::net::IpAddr>,
     /// Referer URL of the request, as defined in HTTP/1.1 Header Field Definitions
-    pub referer: Option<url::Url>,
+    pub referer: Option<String>,
     /// Processing latency on the server, from the time the request was received until the response was sent
     pub latency: Option<std::time::Duration>,
     /// Whether or not a cache lookup was attempted
@@ -174,16 +173,13 @@ impl valuable::Valuable for HttpRequest {
     }
 
     fn visit(&self, visit: &mut dyn valuable::Visit) {
-        let request_method = self
-            .request_method
-            .as_ref()
-            .map(|method| method.to_string());
-        let request_url = self.request_url.as_ref().map(|url| url.to_string());
-        let status = self.status.map(|status| status.as_u16());
+        let request_method = self.request_method;
+        let request_url = self.request_url.as_deref();
+        let status = self.status;
         let user_agent = &self.user_agent;
         let remote_ip = self.remote_ip.map(|ip| ip.to_string());
         let server_ip = self.server_ip.map(|ip| ip.to_string());
-        let referer = self.referer.as_ref().map(|url| url.to_string());
+        let referer = self.referer.as_deref();
         let latency = self
             .latency
             .map(|latency| format!("{}s", latency.as_secs_f32()));
@@ -229,17 +225,4 @@ impl valuable::Structable for HttpRequest {
     fn definition(&self) -> valuable::StructDef<'_> {
         valuable::StructDef::new_dynamic("HttpRequest", valuable::Fields::Named(&[]))
     }
-}
-
-/// Configuration for projects looking to use the [Cloud Trace](https://cloud.google.com/trace) integration
-/// through [trace-specific fields](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#FIELDS.trace) in
-/// a LogEntry.
-#[cfg_attr(docsrs, doc(cfg(feature = "opentelemetry")))]
-#[cfg(any(docsrs, feature = "opentelemetry"))]
-#[derive(Clone)]
-pub struct CloudTraceConfiguration {
-    /// Google-provided [Project
-    /// ID](https://cloud.google.com/resource-manager/docs/creating-managing-projects) for
-    /// prefixing and identifying collectecd traces.
-    pub project_id: String,
 }

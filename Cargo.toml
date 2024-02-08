@@ -9,9 +9,6 @@ repository = "https://github.com/cloudwalk/tracing-stackdriver"
 description = "Stackdriver-compatible tracing layer and event formatter"
 keywords = ["tracing", "stackdriver", "logging", "google", "gcp"]
 
-[badges.maintenance]
-status = "actively-developed"
-
 [package.metadata.docs.rs]
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
@@ -19,71 +16,20 @@ rustdoc-args = ["--cfg", "docsrs"]
 [lib]
 doctest = false
 
+[features]
+valuable = ["dep:valuable", "valuable-serde"]
+
 [dependencies]
 Inflector = "0.11.4"
 serde_json = "1.0.94"
 tracing-core = "0.1.22"
 thiserror = "1.0.40"
-
-[dependencies.http]
-optional = true
-version = "0.2.9"
-
-[dependencies.opentelemetry]
-default-features = false
-features = ["trace"]
-version = "0.21.0"
-optional = true
-
-[dependencies.serde]
-features = ["derive"]
-version = "1.0.193"
-
-[dependencies.time]
-default-features = false
-features = ["formatting"]
-version = "0.3.30"
-
-[dependencies.tracing-opentelemetry]
-version = "0.22.0"
-optional = true
-
-[dependencies.tracing-subscriber]
-features = ["json"]
-version = "0.3.18"
-
-[dependencies.url]
-optional = true
-version = "2.5.0"
-
-[dependencies.valuable]
-optional = true
-features = ["derive"]
-version = "0.1.0"
-
-[dependencies.valuable-serde]
-optional = true
-version = "0.1.0"
+serde = { version = "1.0.193", features = ["derive"] }
+time = { version = "0.3.30", default-features = false, features = ["formatting"] }
+tracing-subscriber = { version = "0.3.18", features = ["json"] }
+valuable = { version = "0.1.0", optional = true, features = ["derive"] }
+valuable-serde = { version = "0.1.0", optional = true }
 
 [dev-dependencies]
-lazy_static = "1.4.0"
 tracing = "0.1.34"
-rand = "0.8.5"
-opentelemetry_sdk = "0.21.1"
-
-[dev-dependencies.time]
-features = ["serde", "serde-well-known", "formatting"]
-version = "0.3.30"
-
-[dev-dependencies.opentelemetry]
-default-features = false
-features = ["testing", "trace"]
-version = "0.21.0"
-
-[dev-dependencies.opentelemetry-stdout]
-features = ["trace"]
-version = "0.2.0"
-
-[features]
-valuable = ["dep:valuable", "valuable-serde", "http", "url"]
-opentelemetry = ["dep:opentelemetry", "tracing-opentelemetry"]
+time = { version = "0.3.30", features = ["serde", "serde-well-known", "formatting"] }
