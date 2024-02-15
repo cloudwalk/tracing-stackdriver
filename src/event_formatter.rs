@@ -82,35 +82,31 @@ impl EventFormatter {
             }
         }
 
-        // serialize the current span and its leaves
+        // serialize the current span // and its leaves
         if let Some(span) = span {
             map.serialize_entry("span", &SerializableSpan::new(&span))?;
             // map.serialize_entry("spans", &SerializableContext::new(context))?; TODO: remove
         }
-            //map.serialize_entry("spans", &SerializableContext::new(context))?;
-            let mut trace_id = TraceIdVisitor::new();
-            if trace_id.trace_id.is_none() {
-                context
-                    .visit_spans(|span| {
-                        for field in span.fields() {
-                            if field.name() == "trace_id" {
-                                let extensions = span.extensions();
-                                if let Some(json_fields) = extensions
-                                    .get::<tracing_subscriber::fmt::FormattedFields<
-                                    tracing_subscriber::fmt::format::JsonFields,
-                                >>() {
-                                    json_fields.record(&field, &mut trace_id);
-                                }
-                            }
+        let mut trace_id = TraceIdVisitor::new();
+        context
+            .visit_spans(|span| {
+                for field in span.fields() {
+                    if field.name() == "trace_id" {
+                        let extensions = span.extensions();
+                        if let Some(json_fields) = extensions
+                            .get::<tracing_subscriber::fmt::FormattedFields<
+                            tracing_subscriber::fmt::format::JsonFields,
+                        >>() {
+                            json_fields.record(&field, &mut trace_id);
                         }
-                        Ok::<(), Box<dyn std::error::Error>>(())
-                    })
-                    .expect("ERROR visiting_spans");
-            }
+                    }
+                }
+                Ok::<(), Error>(())
+            })?;
 
-            if let Some(trace_id) = trace_id.trace_id {
-                map.serialize_entry("traceId", &trace_id)?;
-            }
+        if let Some(trace_id) = trace_id.trace_id {
+            map.serialize_entry("traceId", &trace_id)?;
+        }
 
         // TODO: obtain and serialize trace_id here.
         // if let Some(trace_id) = trace_id {
