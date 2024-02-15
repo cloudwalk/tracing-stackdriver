@@ -63,16 +63,6 @@ where
             event_formatter
         }))
     }
-
-    /// Configures the Cloud Trace integration with OpenTelemetry through special LogEntry fields
-    #[cfg_attr(docsrs, doc(cfg(feature = "opentelemetry")))]
-    #[cfg(any(docsrs, feature = "opentelemetry"))]
-    pub fn with_cloud_trace(self, configuration: crate::CloudTraceConfiguration) -> Self {
-        Self(self.0.map_event_format(|mut event_formatter| {
-            event_formatter.cloud_trace_configuration = Some(configuration);
-            event_formatter
-        }))
-    }
 }
 
 /// Layer trait implementation that delegates to the inner Layer methods

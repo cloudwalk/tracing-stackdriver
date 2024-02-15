@@ -4,7 +4,7 @@ use helpers::run_with_tracing;
 use mocks::{MockDefaultEvent, MockHttpEvent};
 use serde::Deserialize;
 use std::fmt::Debug;
-use tracing_stackdriver::LogSeverity;
+use tracing_stackdriver_cw::LogSeverity;
 use valuable::Valuable;
 
 mod helpers;
@@ -26,13 +26,13 @@ fn handles_valuable_severity_override() {
 
 #[test]
 fn validates_structured_http_requests() {
-    let request_method = http::Method::GET;
+    let request_method = "GET";
     let latency = std::time::Duration::from_millis(1234);
-    let status = http::StatusCode::OK;
+    let status = 200;
     let remote_ip = std::net::IpAddr::from([127, 0, 0, 1]);
 
-    let http_request = tracing_stackdriver::HttpRequest {
-        request_method: Some(request_method.clone()),
+    let http_request = tracing_stackdriver_cw::HttpRequest {
+        request_method: Some(request_method),
         latency: Some(latency),
         status: Some(status),
         remote_ip: Some(remote_ip),
@@ -56,7 +56,7 @@ fn validates_structured_http_requests() {
         event.http_request.latency,
         format!("{}s", latency.as_secs_f32())
     );
-    assert_eq!(event.http_request.status, status.as_u16());
+    assert_eq!(event.http_request.status, status);
     assert_eq!(event.http_request.remote_ip, remote_ip.to_string());
 }
 

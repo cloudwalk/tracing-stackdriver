@@ -41,8 +41,6 @@ impl From<Error> for fmt::Error {
 /// Tracing Event formatter for Stackdriver layers
 pub struct EventFormatter {
     pub(crate) include_source_location: bool,
-    #[cfg(feature = "opentelemetry")]
-    pub(crate) cloud_trace_configuration: Option<crate::CloudTraceConfiguration>,
 }
 
 impl EventFormatter {
@@ -87,6 +85,8 @@ impl EventFormatter {
         // serialize the current span and its leaves
         if let Some(span) = span {
             map.serialize_entry("span", &SerializableSpan::new(&span))?;
+            // map.serialize_entry("spans", &SerializableContext::new(context))?; TODO: remove
+        }
             //map.serialize_entry("spans", &SerializableContext::new(context))?;
             let mut trace_id = TraceIdVisitor::new();
             if trace_id.trace_id.is_none() {
@@ -112,40 +112,13 @@ impl EventFormatter {
                 map.serialize_entry("traceId", &trace_id)?;
             }
 
-            #[cfg(feature = "opentelemetry")]
-            if let (Some(crate::CloudTraceConfiguration { project_id }), Some(otel_data)) = (
-                self.cloud_trace_configuration.as_ref(),
-                span.extensions().get::<tracing_opentelemetry::OtelData>(),
-            ) {
-                use opentelemetry::trace::TraceContextExt;
-
-                let builder = &otel_data.builder;
-
-                if let Some(span_id) = builder.span_id {
-                    map.serialize_entry("logging.googleapis.com/spanId", &span_id.to_string())?;
-                }
-
-                let (trace_id, trace_sampled) = if otel_data.parent_cx.has_active_span() {
-                    let span_ref = otel_data.parent_cx.span();
-                    let span_context = span_ref.span_context();
-
-                    (Some(span_context.trace_id()), span_context.is_sampled())
-                } else {
-                    (builder.trace_id, false)
-                };
-
-                if let Some(trace_id) = trace_id {
-                    map.serialize_entry(
-                        "logging.googleapis.com/trace",
-                        &format!("projects/{project_id}/traces/{trace_id}",),
-                    )?;
-                }
-
-                if trace_sampled {
-                    map.serialize_entry("logging.googleapis.com/trace_sampled", &true)?;
-                }
-            }
-        }
+        // TODO: obtain and serialize trace_id here.
+        // if let Some(trace_id) = trace_id {
+        //     map.serialize_entry(
+        //         "logging.googleapis.com/trace",
+        //         &format!("projects/{project_id}/traces/{trace_id}",),
+        //     )?;
+        // }
 
         // serialize the stackdriver-specific fields with a visitor
         let mut visitor = Visitor::new(severity, map);
@@ -206,8 +179,6 @@ impl Default for EventFormatter {
     fn default() -> Self {
         Self {
             include_source_location: true,
-            #[cfg(feature = "opentelemetry")]
-            cloud_trace_configuration: None,
         }
     }
 }
