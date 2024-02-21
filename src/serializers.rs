@@ -37,7 +37,8 @@ where
         let span_length = formatted_fields.fields.len() + 1;
         let mut map = serializer.serialize_map(Some(span_length))?;
 
-        match serde_json::from_str::<Value>(formatted_fields) { // TODO: this seems weird
+        match serde_json::from_str::<Value>(formatted_fields) {
+            // TODO: this seems weird
             // handle string escaping "properly" (this should be fixed upstream)
             // https://github.com/tokio-rs/tracing/issues/391
             Ok(Value::Object(fields)) => {
