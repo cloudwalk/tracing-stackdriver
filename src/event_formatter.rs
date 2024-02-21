@@ -108,14 +108,6 @@ impl EventFormatter {
             map.serialize_entry("traceId", &trace_id)?;
         }
 
-        // TODO: obtain and serialize trace_id here.
-        // if let Some(trace_id) = trace_id {
-        //     map.serialize_entry(
-        //         "logging.googleapis.com/trace",
-        //         &format!("projects/{project_id}/traces/{trace_id}",),
-        //     )?;
-        // }
-
         // serialize the stackdriver-specific fields with a visitor
         let mut visitor = Visitor::new(severity, map);
         event.record(&mut visitor);
@@ -140,8 +132,9 @@ impl Visit for TraceIdVisitor {
             // `trace_id` can be a json serialized string
             // -- if so, we unpack it
             let value = value
-                .split(':')
+                .split("\"trace_id\":")
                 .skip(1)
+                .filter(|quoted| quoted.len() >= 2)
                 .map(|quoted| &quoted[1..quoted.len() - 2])
                 .find(|_| true)
                 .unwrap_or(value);

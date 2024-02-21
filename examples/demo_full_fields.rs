@@ -23,7 +23,7 @@ fn sync_endpoint_function() {
     // the following 2 variables must only be dropped at the end of the function,
     // or else `traceId` won't be tracked correctly, as it is controlled by the
     // opened "spans" on each thread.
-    let span = trace_span!("sync_endpoint_function", trace_id = %trace_id);
+    let span = trace_span!("sync_endpoint_function", trace_id = %trace_id, test="\"trace_id\":\"yeah, yeah\"");
     let _enter = span.enter();
 
     info!(trace_id = %trace_id, "This is the SYNC endpoint function");
@@ -49,7 +49,7 @@ async fn async_endpoint_function() {
     // the following 2 variables must only be dropped at the end of the function,
     // or else `traceId` won't be tracked correctly, as it is controlled by the
     // opened "spans" on each thread.
-    let span = trace_span!("async_endpoint_function", trace_id = %trace_id);
+    let span = trace_span!("async_endpoint_function", trace_id = %trace_id, test=1);
     let _enter = span.enter();
 
     info!(trace_id = %trace_id, "This is the SYNC endpoint function");
